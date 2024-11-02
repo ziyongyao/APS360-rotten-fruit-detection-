@@ -5,10 +5,16 @@ import torchvision
 import torchvision.transforms as transforms
 import time
 import help_fc
+import architecture
 import matplotlib.pyplot as plt
-def train_general(model, train_dataset, val_dataset, batch_size=32, learning_rate=1e-4, num_epochs=20):
+def train_general(model, train_dataset, val_dataset, batch_size=32, learning_rate=1e-4, num_epochs=20, use_cuda=True):
     # Fixed PyTorch random seed for reproducible result
     torch.manual_seed(1000)
+
+    # If CUDA is available and use_cuda is True, move model to GPU
+    device = torch.device("cuda" if use_cuda and torch.cuda.is_available() else "cpu")
+    model.to(device)
+
     # standard procedure for starting, using SGD for good performance
     criterion =  nn.BCEWithLogitsLoss()
     optimizer = optim.SGD(model.parameters(), lr=learning_rate, momentum=0.9)
@@ -20,6 +26,7 @@ def train_general(model, train_dataset, val_dataset, batch_size=32, learning_rat
     index = 0
     for epoch in range(num_epochs):
         for imgs, labels in iter(train_loader):
+            imgs, labels = imgs.to(device), labels.to(device)  # Move data to GPU if available
             out = model(imgs)             # forward pass
             loss = criterion(out, labels) # compute the  loss using cross entropy
             loss.backward()               # backward pass (compute parameter updates)
