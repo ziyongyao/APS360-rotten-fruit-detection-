@@ -20,13 +20,15 @@ import os
     val_loader = torch.utils.data.DataLoader(val_dataset, batch_size=32, shuffle=False)
 
     model = architecture.UNet()
-    train.train_general(model, train_dataset, val_dataset, batch_size=32, learning_rate=1e-3, num_epochs=1)
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    model = model.to(device)
+    train.train_general(model, train_dataset, val_dataset, batch_size=32, learning_rate=1e-4, num_epochs=3)
 
     # Create the directory if it does not exist
     os.makedirs('./saved_models', exist_ok=True)
 
     # Save the trained model
-    model_path = './saved_models/' + help_fc.get_model_name("UNet", batch_size=32, learning_rate=1e-3, epoch=1)
+    model_path = './saved_models/' + help_fc.get_model_name("UNet", batch_size=32, learning_rate=1e-4, epoch=3)
     torch.save(model.state_dict(), model_path)
     print(f"Model saved to {model_path}")"""
 
@@ -42,7 +44,7 @@ if __name__ == "__main__":
     val_dataset = torchvision.datasets.ImageFolder(root='./new-small-dataset/val', transform=transform)
 
     # Reduce the dataset size for testing (subset of 50 samples)
-    small_train_dataset, _ = torch.utils.data.random_split(train_dataset, [1000, len(train_dataset) - 1000])
+    small_train_dataset, _ = torch.utils.data.random_split(train_dataset, [250, len(train_dataset) - 250])
     small_val_dataset, _ = torch.utils.data.random_split(val_dataset, [250, len(val_dataset) - 250])
 
     train_loader = torch.utils.data.DataLoader(small_train_dataset, batch_size=16, shuffle=True)
@@ -53,12 +55,12 @@ if __name__ == "__main__":
     model = model.to(device)
 
     # Train the model on the small subset
-    train.train_general(model, small_train_dataset, small_val_dataset, batch_size=16, learning_rate=1e-5, num_epochs=10)
+    train.train_general(model, small_train_dataset, small_val_dataset, batch_size=16, learning_rate=1e-3, num_epochs=10)
 
     # Create the directory if it does not exist
     os.makedirs('./saved_models', exist_ok=True)
 
     # Save the trained model
-    model_path = './saved_models/' + help_fc.get_model_name("test_UNet", batch_size=16, learning_rate=1e-5, epoch=10)
+    model_path = './saved_models/' + help_fc.get_model_name("test_UNet", batch_size=16, learning_rate=1e-3, epoch=10)
     torch.save(model.state_dict(), model_path)
     print(f"Model saved to {model_path}")

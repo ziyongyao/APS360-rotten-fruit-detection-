@@ -1,0 +1,8 @@
+training dataset size: 500
+batch size: 8
+learning rate: 1e-3
+# of epoch: 10
+training time: 255s
+use early stopping and learning rate scheduler
+early stopping patience: 2
+learn rate scheduler patience: 2
