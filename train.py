@@ -1,20 +1,25 @@
 import torch
 import torch.nn as nn
 import torch.optim as optim
+import torch.version
 import torchvision
 import torchvision.transforms as transforms
 import time
 import help_fc
 import architecture
 import matplotlib.pyplot as plt
-def train_general(model, train_dataset, val_dataset, batch_size=32, learning_rate=1e-4, num_epochs=20, use_cuda=True):
+
+def convert_labels_to_binary(labels):
+    # Convert labels to binary: 0 for fresh, 1 for rotten
+    return (labels >= 3).float()
+
+def train_general(model, train_dataset, val_dataset, batch_size=32, learning_rate=1e-4, num_epochs=20):
+    # Use CUDA if available
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    model = model.to(device)
+
     # Fixed PyTorch random seed for reproducible result
     torch.manual_seed(1000)
-
-    # If CUDA is available and use_cuda is True, move model to GPU
-    device = torch.device("cuda" if use_cuda and torch.cuda.is_available() else "cpu")
-    model.to(device)
-
     # standard procedure for starting, using SGD for good performance
     criterion =  nn.BCEWithLogitsLoss()
     optimizer = optim.SGD(model.parameters(), lr=learning_rate, momentum=0.9)
@@ -27,24 +32,30 @@ def train_general(model, train_dataset, val_dataset, batch_size=32, learning_rat
     for epoch in range(num_epochs):
         for imgs, labels in iter(train_loader):
             imgs, labels = imgs.to(device), labels.to(device)  # Move data to GPU if available
+
+            # Convert labels to binary for binary classification
+            #print(f"Original Labels: {labels}")
+            labels = convert_labels_to_binary(labels)
+            #print(f"Binary Labels: {labels}")
+
             out = model(imgs)             # forward pass
-            loss = criterion(out, labels) # compute the  loss using cross entropy
+            loss = criterion(out, labels.float()) # compute the  loss using cross entropy
             loss.backward()               # backward pass (compute parameter updates)
             optimizer.step()              # make the updates for each parameter
             optimizer.zero_grad()         # a clean up step for PyTorch
             # Save the current training information
             iters.append(index)
-            losses.append(float(loss)) 
+            losses.append(float(loss))
             index+= 1
-        train_acc.append(help_fc.get_accuracy(model,train_loader)) # compute training accuracy 
-        val_acc.append(help_fc.get_accuracy(model, val_loader))  # compute validation accuracy
+        train_acc.append(help_fc.get_accuracy(model, train_loader, device)) # compute training accuracy
+        val_acc.append(help_fc.get_accuracy(model, val_loader, device))  # compute validation accuracy
         print("Epoch",epoch,"training accuracy",train_acc[-1])
         print("Epoch",epoch,"validation accuracy",val_acc[-1])
         # Save the current model (checkpoint) to a file
-        if epoch%20 == 0:
-            model_path = help_fc.get_model_name(model.name, batch_size, learning_rate, epoch)
+        if epoch % 20 == 0:
+            model_path = help_fc.get_model_name("test_model", batch_size, learning_rate, epoch)
             torch.save(model.state_dict(), model_path)
-    model_path = help_fc.get_model_name(model.name, batch_size, learning_rate, epoch)
+    model_path = help_fc.get_model_name("test_model", batch_size, learning_rate, epoch)
     torch.save(model.state_dict(), model_path)
     print('Stop!')
     end_time = time.time()
@@ -66,3 +77,12 @@ def train_general(model, train_dataset, val_dataset, batch_size=32, learning_rat
 
     print("Final Training Accuracy: {}".format(train_acc[-1]))
     print("Final Validation Accuracy: {}".format(val_acc[-1]))
+# confirm if CUDA is accessible for training
+"""print(torch.version)
+print(torch.version.cuda)  # Should print a version number like '12.4' if CUDA is installed
+print(torch.cuda.is_available())  # Should return True if CUDA is properly set up
+if torch.cuda.is_available():
+    print(f"CUDA is available. Number of GPUs: {torch.cuda.device_count()}")
+    print(f"GPU Name: {torch.cuda.get_device_name(0)}")
+else:
+    print("CUDA is not available.")"""

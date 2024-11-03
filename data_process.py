@@ -7,22 +7,29 @@ Original file is located at
     https://colab.research.google.com/drive/1MpJWy7SoGA8EfkVjyMEztrnwXvnSh3lM
 """
 
+"""
 import kagglehub
+import os
+import shutil
 
 # Download latest version
 path = kagglehub.dataset_download("sriramr/fruits-fresh-and-rotten-for-classification")
 
-print("Path to dataset files:", path)
+# Move dataset to current directory (under 'original-fruits-dataset')
+new_download_path = "./original-fruits-dataset"
+os.makedirs(new_download_path, exist_ok=True)
+shutil.move(path, new_download_path)
+#print("Path to dataset files:", path)
 
 import shutil
 import os
 
-path1='/content/original-fruits-dataset'
-os.makedirs(path1, exist_ok=True)
+path1 = os.path.join(new_download_path, '1', 'dataset')
 
 shutil.move(path, path1)
 
 print("Files moved to:", path1)
+"""
 
 """We will first combine the training and testing set
  by fruits (apples, bananas, oranges). For the preprocessing, we will resize all images to a uniform
@@ -38,6 +45,7 @@ ments. After that, we will convert the images to RGB colour space if they were n
 
 # combine the training and testing set by fruits (apples, bananas, oranges)
 
+
 import os
 import shutil
 import random
@@ -48,7 +56,7 @@ def combine_datasets(path):
   Args:
     path: The path to the dataset.
   """
-  new_path = "/content/fruits-dataset"
+  new_path = "./fruits-dataset"
 
   fruits = ['freshapples', 'freshbanana', 'freshoranges','rottenapples', 'rottenbanana', 'rottenoranges']
   for fruit in fruits:
@@ -73,8 +81,7 @@ def combine_datasets(path):
 
 
 # Assuming 'path' variable is defined with the dataset path
-path2=os.path.join(path1, '1', 'dataset')
-combine_datasets(path2)
+combine_datasets('./dataset')
 
 # resize all images to a uniform dimension of 224x224 pixels
 
@@ -101,7 +108,7 @@ def resize_images(path):
         except Exception as e:
           print(f"Error processing image {img_path}: {e}")
 
-resize_images('/content/fruits-dataset')
+#resize_images('./fruits-dataset')
 
 # convert the images to RGB colour space if they were not already
 
@@ -127,7 +134,7 @@ def convert_to_rgb(path):
           print(f"Error processing image {img_path}: {e}")
 
 
-convert_to_rgb('/content/fruits-dataset')
+#convert_to_rgb('./fruits-dataset')
 
 # perform manual checks on a random sample of images to verify the correctness of labels
 import os
@@ -156,7 +163,7 @@ def manual_check_labels(path, sample_size=20):
                 except Exception as e:
                     print(f"Error processing image {img_path}: {e}")
 
-manual_check_labels('/content/fruits-dataset')
+#manual_check_labels('./fruits-dataset')
 
 # split the dataset into training, validation, and test sets. We will randomly select 70 percent of our dataset from each fruit for training, 15 percent for validation, and 15 percent for testing our model.
 
@@ -189,7 +196,7 @@ def split_dataset(path, train_ratio=0.7, val_ratio=0.15, test_ratio=0.15):
       test_images = image_files[val_split:]
 
       for split_dir, image_list in zip(['train', 'val', 'test'], [train_images, val_images, test_images]):
-        split_fruit_dir = os.path.join('/content/new-fruits-dataset', split_dir, fruit)
+        split_fruit_dir = os.path.join('./new-small-dataset', split_dir, fruit)
         if not os.path.exists(split_fruit_dir):
           os.makedirs(split_fruit_dir)
 
@@ -198,4 +205,43 @@ def split_dataset(path, train_ratio=0.7, val_ratio=0.15, test_ratio=0.15):
           dst_path = os.path.join(split_fruit_dir, filename)
           shutil.move(src_path, dst_path)
 
-split_dataset('/content/fruits-dataset')
+#split_dataset('./fruits-dataset')
+
+# Create a smaller dataset containing 20% of the original dataset, ensuring it is balanced by each type of fruit.
+def create_smaller_dataset(path, output_path, reduction_ratio=0.2):
+    """Creates a smaller dataset containing a balanced subset of the original dataset.
+
+    Args:
+        path: The path to the original dataset.
+        output_path: The path to save the smaller dataset.
+        reduction_ratio: The ratio by which to reduce the dataset.
+    """
+    fruits = ['freshapples', 'freshbanana', 'freshoranges', 'rottenapples', 'rottenbanana', 'rottenoranges']
+    for fruit in fruits:
+        combined_dir = os.path.join(path, fruit)
+        if os.path.exists(combined_dir):
+            image_files = os.listdir(combined_dir)
+            if len(image_files) == 0:
+                print(f"Warning: No images found in {combined_dir}")
+                continue
+            reduced_count = max(1, int(len(image_files) * reduction_ratio))  # Ensure at least 1 image is copied
+            random_sample = random.sample(image_files, reduced_count)
+
+            output_fruit_dir = os.path.join(output_path, fruit)
+            if not os.path.exists(output_fruit_dir):
+                os.makedirs(output_fruit_dir)
+
+            for filename in random_sample:
+                src_path = os.path.join(combined_dir, filename)
+                dst_path = os.path.join(output_fruit_dir, filename)
+                try:
+                    shutil.copy(src_path, dst_path)
+                except Exception as e:
+                    print(f"Error copying file {src_path} to {dst_path}: {e}")
+
+            print(f"Copied {len(random_sample)} images to {output_fruit_dir}")
+
+create_smaller_dataset('./fruits-dataset', './small-dataset', reduction_ratio=0.2)
+resize_images('./small-dataset')
+convert_to_rgb('./small-dataset')
+split_dataset('./small-dataset')

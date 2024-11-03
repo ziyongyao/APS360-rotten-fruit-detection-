@@ -6,7 +6,7 @@ class UNet(nn.Module):
         super(UNet, self).__init__()
 
         # Contracting path (encoder)
-        self.encoder1 = self.conv_block(1, 64)
+        self.encoder1 = self.conv_block(3, 64)
         self.encoder2 = self.conv_block(64, 128)
         self.maxpool = nn.MaxPool2d(kernel_size=2, stride=2)
 
@@ -58,13 +58,13 @@ class UNet(nn.Module):
         gap = gap.view(gap.size(0), -1)  # Flatten the output
 
         # Fully connected layer for classification
-        out = self.fc(gap)
+        out = self.fc(gap).squeeze(1)
         return out
 
 
 # Example usage
 if __name__ == "__main__":
     model = UNet()
-    x = torch.randn(8, 1, 224, 224)  # (batch_size, channels, height, width)
+    x = torch.randn(8, 3, 224, 224)  # (batch_size, channels, height, width)
     output = model(x)
     print(output.shape)
