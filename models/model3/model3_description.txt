@@ -1,0 +1,5 @@
+training dataset size: 1000
+batch size: 16
+learning rate: 5e-5
+# of epoch: 5
+training time: 239s
