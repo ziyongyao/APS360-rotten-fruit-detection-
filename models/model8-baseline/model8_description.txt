@@ -1,0 +1,9 @@
+training dataset size: 1000
+batch size: 16
+learning rate: 5e-4
+# of epoch: 20
+training time: 108s
+use early stopping and learning rate scheduler
+early stopping patience: 2
+learn rate scheduler patience: 2
+architecture: simple CNN

@@ -43,7 +43,7 @@ def train_general(model, train_dataset, val_dataset, batch_size=32, learning_rat
     # standard procedure for starting, using SGD for good performance
     criterion =  nn.BCEWithLogitsLoss()
     optimizer = optim.SGD(model.parameters(), lr=learning_rate, momentum=0.9)
-    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=1)
+    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=2)
     early_stopping = EarlyStopping(patience=2)
 
     iters, losses, train_acc, val_acc = [], [], [], []

@@ -77,22 +77,22 @@ if __name__ == "__main__":
     val_dataset = torchvision.datasets.ImageFolder(root='./new-small-dataset/val', transform=transform)
 
     # Reduce the dataset size for testing (subset of 50 samples)
-    small_train_dataset, _ = torch.utils.data.random_split(train_dataset, [500, len(train_dataset) - 500])
+    small_train_dataset, _ = torch.utils.data.random_split(train_dataset, [1000, len(train_dataset) - 1000])
     small_val_dataset, _ = torch.utils.data.random_split(val_dataset, [250, len(val_dataset) - 250])
 
     train_loader = torch.utils.data.DataLoader(small_train_dataset, batch_size=16, shuffle=True)
     val_loader = torch.utils.data.DataLoader(small_val_dataset, batch_size=16, shuffle=False)
 
-    baseline_model = arch_base.SimpleCNN
+    baseline_model = arch_base.SimpleCNN()
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     baseline_model = baseline_model.to(device)
 
-    train.train_general(baseline_model, small_train_dataset, small_val_dataset, batch_size=8, learning_rate=1e-3, num_epochs=10)
+    train.train_general(baseline_model, small_train_dataset, small_val_dataset, batch_size=16, learning_rate=5e-4, num_epochs=20)
 
     # Create the directory if it does not exist
     os.makedirs('./saved_models', exist_ok=True)
 
     # Save the trained model
-    model_path = './saved_models/' + help_fc.get_model_name("baseline_CNN", batch_size=8, learning_rate=1e-3, epoch=10)
-    torch.save(model.state_dict(), model_path)
+    model_path = './saved_models/' + help_fc.get_model_name("baseline_CNN", batch_size=16, learning_rate=5e-4, epoch=20)
+    torch.save(baseline_model.state_dict(), model_path)
     print(f"Model saved to {model_path}")
