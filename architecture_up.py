@@ -10,7 +10,7 @@ class UNet(nn.Module):
         super(UNet, self).__init__()
         
         # Encoder path (Downsampling)
-        self.enc_conv1 = self.conv_block(1, 64)
+        self.enc_conv1 = self.conv_block(3, 64)
         self.enc_conv2 = self.conv_block(64, 128)
         self.enc_conv3 = self.conv_block(128, 256)
         self.enc_conv4 = self.conv_block(256, 512)
@@ -79,7 +79,7 @@ class UNet(nn.Module):
         gap = gap.view(gap.size(0), -1)  # Flatten the output
 
         # Fully connected layer for classification
-        out = self.fc(gap)
+        out = self.fc(gap).squeeze(1)
         
         return out
 
