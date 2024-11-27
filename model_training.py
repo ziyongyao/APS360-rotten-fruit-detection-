@@ -1,6 +1,7 @@
 import help_fc
 import architecture
 import architecture_up
+import architecture_upv3
 import arch_base
 import train
 import torch
@@ -46,24 +47,24 @@ if __name__ == "__main__":
     val_dataset = torchvision.datasets.ImageFolder(root='./new-small-dataset/val', transform=transform)
 
     # Reduce the dataset size for testing (subset of 50 samples)
-    small_train_dataset, _ = torch.utils.data.random_split(train_dataset, [250, len(train_dataset) - 250])
+    small_train_dataset, _ = torch.utils.data.random_split(train_dataset, [1000, len(train_dataset) - 1000])
     small_val_dataset, _ = torch.utils.data.random_split(val_dataset, [250, len(val_dataset) - 250])
 
     train_loader = torch.utils.data.DataLoader(small_train_dataset, batch_size=16, shuffle=True)
     val_loader = torch.utils.data.DataLoader(small_val_dataset, batch_size=16, shuffle=False)
 
-    model = architecture_up.UNet()
+    model = architecture_upv3.UNet()
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     model = model.to(device)
 
     # Train the model on the small subset
-    train.train_general(model, small_train_dataset, small_val_dataset, batch_size=16, learning_rate=1e-3, num_epochs=10)
+    train.train_general(model, small_train_dataset, small_val_dataset, batch_size=16, learning_rate=1e-3, num_epochs=20)
 
     # Create the directory if it does not exist
     os.makedirs('./saved_models', exist_ok=True)
 
     # Save the trained model
-    model_path = './saved_models/' + help_fc.get_model_name("test_UNet_up", batch_size=16, learning_rate=1e-3, epoch=10)
+    model_path = './saved_models/' + help_fc.get_model_name("test_UNet_upv3", batch_size=16, learning_rate=1e-3, epoch=20)
     torch.save(model.state_dict(), model_path)
     print(f"Model saved to {model_path}")
 

@@ -8,6 +8,8 @@ import time
 import help_fc
 import architecture
 import matplotlib.pyplot as plt
+import os
+from torch.optim.lr_scheduler import LinearLR
 
 class EarlyStopping:
     def __init__(self, patience=3, delta=0):
@@ -42,9 +44,9 @@ def train_general(model, train_dataset, val_dataset, batch_size=32, learning_rat
     torch.manual_seed(1000)
     # standard procedure for starting, using SGD for good performance
     criterion =  nn.BCEWithLogitsLoss()
-    optimizer = optim.SGD(model.parameters(), lr=learning_rate, momentum=0.9)
-    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=2)
-    early_stopping = EarlyStopping(patience=2)
+    optimizer = optim.SGD(model.parameters(), lr=learning_rate, momentum=0.9, weight_decay=1e-4)
+    scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.9)
+    early_stopping = EarlyStopping(patience=4)
 
     iters, losses, train_acc, val_acc = [], [], [], []
     train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
@@ -52,6 +54,9 @@ def train_general(model, train_dataset, val_dataset, batch_size=32, learning_rat
     start_time = time.time()
     model.train()
     index = 0
+    best_val_acc = 0.0
+    best_model_path = None
+
     for epoch in range(num_epochs):
         for imgs, labels in iter(train_loader):
             imgs, labels = imgs.to(device), labels.to(device)  # Move data to GPU if available
@@ -73,14 +78,19 @@ def train_general(model, train_dataset, val_dataset, batch_size=32, learning_rat
         train_acc.append(help_fc.get_accuracy(model, train_loader, device)) # compute training accuracy
         with torch.no_grad():
             val_loss = sum(criterion(model(imgs.to(device)), convert_labels_to_binary(labels).to(device).float()) for imgs, labels in val_loader) / len(val_loader)
+            val_acc_epoch = help_fc.get_accuracy(model, val_loader, device)  # compute validation accuracy
             val_acc.append(help_fc.get_accuracy(model, val_loader, device))  # compute validation accuracy
         print("Epoch",epoch,"training accuracy",train_acc[-1])
         print("Epoch",epoch,"validation accuracy",val_acc[-1])
-        # Save the current model (checkpoint) to a file
-        if epoch % 20 == 0:
-            model_path = help_fc.get_model_name("test_model", batch_size, learning_rate, epoch)
-            torch.save(model.state_dict(), model_path)
-        scheduler.step(val_loss)
+        # Save the current model (checkpoint) if it has the highest validation accuracy so far, after a certain number of epochs
+        if epoch >= 5 and val_acc_epoch > best_val_acc:
+            best_val_acc = val_acc_epoch
+            if not os.path.exists('best_model'):
+                os.makedirs('best_model')
+            best_model_path = os.path.join(os.getcwd(), 'best_model', f'best_model_epoch_{epoch}.pth')
+            torch.save(model.state_dict(), best_model_path)
+            print(f"New best model saved with validation accuracy: {best_val_acc}")
+        scheduler.step()
         print(f"Learning rate after epoch {epoch + 1}: {scheduler.optimizer.param_groups[0]['lr']}")
         early_stopping(val_loss)
         if early_stopping.early_stop:
